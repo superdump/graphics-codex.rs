@@ -1,0 +1,2 @@
+The cornell box obj model and mtl materials, and the quad obj model are all
+from https://github.com/Twinklebear/tobj/

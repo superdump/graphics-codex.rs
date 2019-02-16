@@ -1,7 +1,9 @@
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
+pub use nalgebra::*;
+
+pub mod obj;
+pub mod point;
+pub mod triangle;
+
+pub use obj::*;
+pub use point::*;
+pub use triangle::*;
