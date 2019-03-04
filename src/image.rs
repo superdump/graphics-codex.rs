@@ -2,6 +2,7 @@ use crate::color::{pixel_value, Radiance};
 use crate::point::vector3;
 
 use rayon::iter::IntoParallelRefMutIterator;
+use rayon::prelude::*;
 use rayon::slice::IterMut;
 
 pub struct Image {
@@ -34,14 +35,15 @@ impl Image {
     }
 
     pub fn as_argb8888(&mut self) -> &[u8] {
-        for i in 0..(self.width * self.height) {
-            let l = self.data[i];
-            let color = pixel_value(l, 1.0f32, 2.2f32) * 255.99f32;
-            let i4 = 4 * i;
-            self.data_argb8888[i4] = color.x as u8;
-            self.data_argb8888[i4 + 1] = color.y as u8;
-            self.data_argb8888[i4 + 2] = color.z as u8;
-        }
+        self.data
+            .par_iter()
+            .zip(self.data_argb8888.par_chunks_mut(4))
+            .for_each(|(l, argb)| {
+                let color = pixel_value(*l, 1.0f32, 2.2f32) * 255.99f32;
+                argb[0] = color.x as u8;
+                argb[1] = color.y as u8;
+                argb[2] = color.z as u8;
+            });
 
         self.data_argb8888.as_slice()
     }
