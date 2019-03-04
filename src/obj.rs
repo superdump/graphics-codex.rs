@@ -1,6 +1,5 @@
-use crate::point::point3;
-use crate::triangle::IndexedTriangleList;
-use nalgebra::Point3;
+use crate::mesh::{mesh, Mesh};
+use crate::point::{point2, point3, vector3};
 use std::path::Path;
 use tobj;
 
@@ -9,42 +8,44 @@ pub fn load_obj(path: &Path) -> Vec<Mesh> {
 
     let obj = tobj::load_obj(path);
     let (models, _) = obj.unwrap();
-    for m in models.iter() {
-        let mesh = &m.mesh;
-        assert!(mesh.positions.len() % 3 == 0);
-        let mut vertices = Vec::with_capacity(mesh.positions.len() % 3);
-        for v in 0..mesh.positions.len() / 3 {
+    for model in models.iter() {
+        let obj_mesh = &model.mesh;
+        assert!(obj_mesh.positions.len() % 3 == 0);
+        let mut vertices = Vec::with_capacity(obj_mesh.positions.len() / 3);
+        for v in 0..obj_mesh.positions.len() / 3 {
             vertices.push(point3(
-                mesh.positions[3 * v],
-                mesh.positions[3 * v + 1],
-                mesh.positions[3 * v + 2],
+                obj_mesh.positions[3 * v],
+                obj_mesh.positions[3 * v + 1],
+                obj_mesh.positions[3 * v + 2],
             ));
         }
-        let mut indices = Vec::with_capacity(mesh.indices.len());
-        for i in 0..mesh.indices.len() {
-            indices.push(mesh.indices[i] as usize);
+        assert!(obj_mesh.texcoords.len() % 2 == 0);
+        let mut uvs = vec![point2(0f32, 0f32); obj_mesh.positions.len() / 3];
+        if obj_mesh.texcoords.len() / 2 == obj_mesh.positions.len() / 3 {
+            for v in 0..obj_mesh.texcoords.len() / 2 {
+                uvs[v] = point2(obj_mesh.texcoords[2 * v], obj_mesh.texcoords[2 * v + 1]);
+            }
         }
-        output.push(Mesh::new(m.name.clone(), vertices, indices));
+        let mut indices = Vec::with_capacity(obj_mesh.indices.len());
+        for i in 0..obj_mesh.indices.len() {
+            indices.push(obj_mesh.indices[i] as usize);
+        }
+        let gc_mesh = mesh(
+            model.name.clone(),
+            vertices,
+            uvs,
+            indices,
+            vector3(0f32, 0f32, 0f32),
+        );
+        println!(
+            "Mesh loaded: {} ({} triangles; {} vertices; {} uvs)",
+            gc_mesh.name,
+            gc_mesh.triangles.len(),
+            gc_mesh.triangles.vertices.len(),
+            gc_mesh.triangles.uvs.len(),
+        );
+        output.push(gc_mesh);
     }
 
     output
-}
-
-#[derive(Debug)]
-pub struct Mesh {
-    pub name: String,
-    pub triangles: IndexedTriangleList,
-}
-
-impl Mesh {
-    pub fn new(name: String, vertices: Vec<Point3<f32>>, indices: Vec<usize>) -> Mesh {
-        Mesh {
-            name,
-            triangles: IndexedTriangleList::from_vecs(vertices, indices),
-        }
-    }
-}
-
-pub fn mesh(name: String, vertices: Vec<Point3<f32>>, indices: Vec<usize>) -> Mesh {
-    Mesh::new(name, vertices, indices)
 }

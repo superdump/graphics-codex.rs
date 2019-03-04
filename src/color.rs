@@ -2,8 +2,8 @@ use crate::math::vector_pow;
 
 use nalgebra::{Point3, Vector3};
 
-type Color = Point3<f32>;
-type Radiance = Vector3<f32>;
+pub type Color = Point3<f32>;
+pub type Radiance = Vector3<f32>;
 
 pub fn pixel_value(l: Radiance, k: f32, gamma: f32) -> Color {
     // adjust for constant sensitivity

@@ -11,12 +11,16 @@ fn main() {
 
 fn triangle_list_example() {
     let mut mesh = triangle_list();
+    let zero2 = point2(0f32, 0f32);
 
     // Slanted xyz face:
     mesh.append(
         point3(1.0f32, 0.0f32, 0.0f32),
         point3(0.0f32, 1.0f32, 0.0f32),
         point3(0.0f32, 0.0f32, 1.0f32),
+        zero2,
+        zero2,
+        zero2,
     );
 
     // Bottom zx face:
@@ -24,6 +28,9 @@ fn triangle_list_example() {
         point3(1.0f32, 0.0f32, 0.0f32),
         point3(0.0f32, 0.0f32, 1.0f32),
         point3(0.0f32, 0.0f32, 0.0f32),
+        zero2,
+        zero2,
+        zero2,
     );
 
     // Back xy face:
@@ -31,6 +38,9 @@ fn triangle_list_example() {
         point3(0.0f32, 0.0f32, 0.0f32),
         point3(0.0f32, 1.0f32, 0.0f32),
         point3(1.0f32, 0.0f32, 0.0f32),
+        zero2,
+        zero2,
+        zero2,
     );
 
     // Left yz face:
@@ -38,6 +48,9 @@ fn triangle_list_example() {
         point3(0.0f32, 1.0f32, 0.0f32),
         point3(0.0f32, 0.0f32, 0.0f32),
         point3(0.0f32, 0.0f32, 1.0f32),
+        zero2,
+        zero2,
+        zero2,
     );
 
     for i in 0..4 {
@@ -47,11 +60,12 @@ fn triangle_list_example() {
 
 fn indexed_triangle_list_example() {
     let mut mesh = indexed_triangle_list();
+    let zero2 = point2(0f32, 0f32);
 
-    mesh.append_vertex(point3(1.0f32, 0.0f32, 0.0f32));
-    mesh.append_vertex(point3(0.0f32, 1.0f32, 0.0f32));
-    mesh.append_vertex(point3(0.0f32, 0.0f32, 1.0f32));
-    mesh.append_vertex(point3(0.0f32, 0.0f32, 0.0f32));
+    mesh.append_vertex(point3(1.0f32, 0.0f32, 0.0f32), zero2);
+    mesh.append_vertex(point3(0.0f32, 1.0f32, 0.0f32), zero2);
+    mesh.append_vertex(point3(0.0f32, 0.0f32, 1.0f32), zero2);
+    mesh.append_vertex(point3(0.0f32, 0.0f32, 0.0f32), zero2);
 
     // Slanted xyz face:
     mesh.append(0, 1, 2);

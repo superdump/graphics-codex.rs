@@ -1,2 +1,5 @@
 The cornell box obj model and mtl materials, and the quad obj model are all
 from https://github.com/Twinklebear/tobj/
+
+teapot.obj, default.mtl, and default.png are from
+https://casual-effects.com/g3d/data10/common/model/teapot/teapot.zip

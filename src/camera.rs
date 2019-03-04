@@ -18,7 +18,7 @@ impl PinholeCamera {
             self.z_near * -(y / h as f32 - 0.5f32) * side,
             self.z_near,
         );
-        ray(p, p.coords)
+        ray(p, p.coords.normalize())
     }
 }
 
