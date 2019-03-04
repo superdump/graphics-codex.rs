@@ -8,6 +8,7 @@ use graphics_codex::*;
 use rayon::prelude::*;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+use sdl2::mouse::MouseButton;
 use sdl2::pixels::{Color, PixelFormatEnum};
 use sdl2::rect::Rect;
 use sdl2::render::{Canvas, Texture};
@@ -122,11 +123,27 @@ fn main() -> Result<(), Error> {
     }
 
     let mut frame_count = 0;
+    render(&scene, &camera, &mut image);
     'mainloop: loop {
         frame_count = frame_count + 1;
         println!("Frame #{}", frame_count);
         for event in event_pump.poll_iter() {
             match event {
+                Event::MouseButtonDown {
+                    x,
+                    y,
+                    mouse_btn: MouseButton::Left,
+                    ..
+                } => {
+                    let x = x as usize;
+                    let y = y as usize;
+                    println!("Tracing pixel: {},{}", x, y);
+                    image.set(
+                        x,
+                        y,
+                        trace_pixel(&camera, x, y, image.width, image.height, &scene),
+                    );
+                }
                 Event::Quit { .. }
                 | Event::KeyDown {
                     keycode: Some(Keycode::Escape),
@@ -135,8 +152,8 @@ fn main() -> Result<(), Error> {
                 _ => {}
             }
         }
-        render(&scene, &camera, &mut image);
         show(&mut image, rect, &mut texture, &mut canvas)?;
+        ::std::thread::sleep(::std::time::Duration::from_millis(100));
     }
 
     Ok(())
@@ -152,8 +169,7 @@ fn render(scene: &Scene, camera: &PinholeCamera, image: &mut Image) {
             .for_each(|(index, radiance)| {
                 let x = index % w;
                 let y = index / w;
-                let ray = camera.get_primary_ray(x as f32, y as f32, w as i32, h as i32);
-                *radiance = l_i(scene, ray);
+                *radiance = trace_pixel(camera, x, y, w, h, scene);
             });
     } else {
         for y in 0..h {
@@ -174,11 +190,22 @@ fn render(scene: &Scene, camera: &PinholeCamera, image: &mut Image) {
                 //     _ => Radiance::new(0.0f32, 0.0f32, 0.0f32),
                 // };
                 // image.set(x, y, radiance);
-                let ray = camera.get_primary_ray(x as f32, y as f32, w as i32, h as i32);
-                image.set(x, y, l_i(scene, ray));
+                image.set(x, y, trace_pixel(camera, x, y, w, h, scene));
             }
         }
     }
+}
+
+fn trace_pixel(
+    camera: &PinholeCamera,
+    x: usize,
+    y: usize,
+    w: usize,
+    h: usize,
+    scene: &Scene,
+) -> Radiance {
+    let ray = camera.get_primary_ray(x as f32, y as f32, w as i32, h as i32);
+    l_i(scene, ray)
 }
 
 fn l_i(scene: &Scene, ray: Ray) -> Radiance {
