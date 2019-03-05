@@ -3,6 +3,8 @@ name = "graphics-codex"
 version = "0.1.0"
 authors = ["Robert Swain <robert.swain@gmail.com>"]
 edition = "2018"
+description = "An implementation of Morgan McGuire's graphicscodex.com in Rust"
+license = "MIT"
 
 [dependencies]
 clap = "2.32.0"
