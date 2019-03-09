@@ -26,23 +26,48 @@ use crate::color::Radiance;
 use nalgebra::{Point3, Vector3};
 
 pub struct Surfel {
-    pub x: Point3<f32>,
+    pub position: Point3<f32>,
     pub normal: Vector3<f32>,
     pub t: f32,
     pub radiance: Radiance,
+    pub reflectivity: f32,
 }
 
 impl Surfel {
-    pub fn new(x: Point3<f32>, normal: Vector3<f32>, t: f32, radiance: Radiance) -> Surfel {
+    pub fn new(
+        position: Point3<f32>,
+        normal: Vector3<f32>,
+        t: f32,
+        radiance: Radiance,
+        reflectivity: f32,
+    ) -> Surfel {
         Surfel {
-            x,
+            position,
             normal,
             t,
             radiance,
+            reflectivity,
         }
+    }
+
+    pub fn emitted_radiance(&self, wo: Vector3<f32>) -> Radiance {
+        Radiance::new(0f32, 0f32, 0f32)
+    }
+
+    pub fn finite_scattering_density(&self, wi: Vector3<f32>, wo: Vector3<f32>) -> f32 {
+        if wi.dot(&self.normal) > 0f32 && wo.dot(&self.normal) > 0f32 {
+            return self.reflectivity / ::std::f32::consts::PI;
+        }
+        0f32
     }
 }
 
-pub fn surfel(x: Point3<f32>, normal: Vector3<f32>, t: f32, radiance: Radiance) -> Surfel {
-    Surfel::new(x, normal, t, radiance)
+pub fn surfel(
+    position: Point3<f32>,
+    normal: Vector3<f32>,
+    t: f32,
+    radiance: Radiance,
+    reflectivity: f32,
+) -> Surfel {
+    Surfel::new(position, normal, t, radiance, reflectivity)
 }

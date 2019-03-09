@@ -128,10 +128,10 @@ fn main() -> Result<(), Error> {
     // scene
     //     .spheres
     //     .push(sphere(point3(-2.0f32, 1.5f32, -5.0f32), 0.5f32));
-    // scene.planes.push(plane(
-    //     point3(0.0f32, 0.0f32, -5.0f32),
-    //     vector3(1.0f32, 0.0f32, 0.2f32).normalize(),
-    // ));
+    scene.planes.push(plane(
+        point3(0.0f32, -100.0f32, 0.0f32),
+        vector3(0.0f32, 1.0f32, 0.2f32).normalize(),
+    ));
     // scene.triangles.push(triangle(
     //     point3(-1f32, -1f32, -5f32),
     //     point3(1f32, -1f32, -5f32),
@@ -144,6 +144,10 @@ fn main() -> Result<(), Error> {
         msh.translation = msh.translation + mesh_offset;
         // println!("After: {}", msh);
     }
+    scene.lights.push(light(
+        point3(100f32, 100f32, 10f32),
+        Radiance::new(100000f32, 100000f32, 100000f32),
+    ));
 
     let mut frame_count = 0;
     render(&scene, &camera, &mut image);
@@ -231,47 +235,98 @@ fn trace_pixel(
     l_i(scene, ray)
 }
 
-fn l_i(scene: &Scene, ray: Ray) -> Radiance {
-    if let Some(s) = find_first_intersection(scene, ray) {
-        return s.radiance;
+// fn l_i(scene: &Scene, ray: Ray) -> Radiance {
+//     if let Some(s) = find_first_intersection(scene, ray) {
+//         return s.radiance;
+//     } else {
+//         return Radiance::new(0.0f32, 0.0f32, 0.0f32);
+//     }
+// }
+
+fn l_i(scene: &Scene, r: Ray) -> Radiance {
+    if let Some(s) = find_first_intersection(scene, &r, std::f32::MAX, false) {
+        return l_o(scene, &s, -r.direction);
     } else {
         return Radiance::new(0.0f32, 0.0f32, 0.0f32);
     }
 }
 
-fn find_first_intersection(scene: &Scene, ray: Ray) -> Option<Surfel> {
-    let mut min_t = std::f32::MAX;
+fn l_o(scene: &Scene, s: &Surfel, wo: Vector3<f32>) -> Radiance {
+    let zero = vector3(0f32, 0f32, 0f32);
+
+    let mut l = s.emitted_radiance(wo);
+    let x = s.position;
+    let n = s.normal;
+
+    for light in &scene.lights {
+        let y = light.position - zero;
+        if visible(scene, x, y) {
+            let wi = (y - x).normalize();
+            let bi = light.biradiance(&x);
+            let f = s.finite_scattering_density(wi, wo);
+            l = l + bi * f * wi.dot(&n).abs();
+        }
+    }
+
+    l
+}
+
+fn visible(scene: &Scene, x: Point3<f32>, y: Point3<f32>) -> bool {
+    let direction = y - x;
+    let magnitude = direction.magnitude();
+    let wi = direction / magnitude;
+    let r = ray(x + EPSILON * wi, wi);
+    if let Some(_) = find_first_intersection(scene, &r, magnitude, true) {
+        return false;
+    }
+    true
+}
+
+fn find_first_intersection(scene: &Scene, ray: &Ray, max_t: f32, has_any: bool) -> Option<Surfel> {
+    let mut min_t = max_t;
     let mut min_surfel: Option<Surfel> = None;
     for sphere in &scene.spheres {
-        if let Some(s) = ray_sphere_intersect(&ray, sphere) {
+        if let Some(s) = ray_sphere_intersect(ray, sphere) {
             if s.t < min_t {
                 min_t = s.t;
                 min_surfel = Some(s);
+                if has_any {
+                    return min_surfel;
+                }
             }
         }
     }
     for plane in &scene.planes {
-        if let Some(s) = ray_plane_intersect(&ray, plane) {
+        if let Some(s) = ray_plane_intersect(ray, plane) {
             if s.t < min_t {
                 min_t = s.t;
                 min_surfel = Some(s);
+                if has_any {
+                    return min_surfel;
+                }
             }
         }
     }
     for triangle in &scene.triangles {
-        if let Some(s) = ray_triangle_intersect(&ray, triangle) {
+        if let Some(s) = ray_triangle_intersect(ray, triangle) {
             if s.t < min_t {
                 min_t = s.t;
                 min_surfel = Some(s);
+                if has_any {
+                    return min_surfel;
+                }
             }
         }
     }
     for mesh in &scene.meshes {
         for triangle in mesh {
-            if let Some(s) = ray_triangle_intersect(&ray, &triangle) {
+            if let Some(s) = ray_triangle_intersect(ray, &triangle) {
                 if s.t < min_t {
                     min_t = s.t;
                     min_surfel = Some(s);
+                    if has_any {
+                        return min_surfel;
+                    }
                 }
             }
         }
@@ -304,8 +359,8 @@ fn ray_sphere_intersect(ray: &Ray, sphere: &Sphere) -> Option<Surfel> {
             .cross(&vector3(1f32, 0f32, 0f32))
             .magnitude()
             .asin();
-        return Some(surfel(x, p, t, Radiance::new(theta, phi, 1f32))); // 3 sub, 3 mul, 2 add, 1 sqrt, 1 div
-                                                                       // 26 mul, 23 add, 3 cmp, 3 sqrt
+        return Some(surfel(x, p, t, Radiance::new(theta, phi, 1f32), 1f32)); // 3 sub, 3 mul, 2 add, 1 sqrt, 1 div
+                                                                             // 26 mul, 23 add, 3 cmp, 3 sqrt
     }
     None
 }
@@ -337,7 +392,13 @@ fn ray_plane_intersect(ray: &Ray, plane: &Plane) -> Option<Surfel> {
         return None;
     }
     let x = ray.at_t(t); // 3 mul, 3 sub
-    Some(surfel(x, plane.normal, t, Radiance::new(1f32, 1f32, 1f32)))
+    Some(surfel(
+        x,
+        plane.normal,
+        t,
+        Radiance::new(1f32, 1f32, 1f32),
+        1f32,
+    ))
     // 10 mul, 10 sub, 2 cmp
 }
 
@@ -385,7 +446,7 @@ fn ray_triangle_intersect(ray: &Ray, triangle: &Triangle) -> Option<Surfel> {
         return None;
     }
     let (x, radiance) = interpolate(&triangle.vertices, &triangle.uvs, &b); // 9 sub, 9 mul, 9 add
-    Some(surfel(x, n, t, radiance))
+    Some(surfel(x, n, t, radiance, 1f32))
     // 50 add, 48 mul, 6 cmp, 1 sqrt, 1 abs
 }
 

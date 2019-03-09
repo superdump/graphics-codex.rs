@@ -21,30 +21,27 @@
  * SOFTWARE.
  */
 
-pub use nalgebra::*;
+use crate::color::Radiance;
 
-pub mod camera;
-pub mod color;
-pub mod image;
-pub mod light;
-pub mod math;
-pub mod mesh;
-pub mod obj;
-pub mod point;
-pub mod ray;
-pub mod scene;
-pub mod surfel;
-pub mod triangle;
+use nalgebra::Point3;
 
-pub use camera::*;
-pub use color::*;
-pub use image::*;
-pub use light::*;
-pub use math::*;
-pub use mesh::*;
-pub use obj::*;
-pub use point::*;
-pub use ray::*;
-pub use scene::*;
-pub use surfel::*;
-pub use triangle::*;
+pub type Biradiance = Radiance;
+
+pub struct Light {
+    pub position: Point3<f32>,
+    pub power: Radiance,
+}
+
+impl Light {
+    pub fn new(position: Point3<f32>, power: Radiance) -> Light {
+        Light { position, power }
+    }
+
+    pub fn biradiance(&self, x: &Point3<f32>) -> Biradiance {
+        self.power / (4f32 * ::std::f32::consts::PI * (self.position - x).magnitude_squared())
+    }
+}
+
+pub fn light(position: Point3<f32>, power: Radiance) -> Light {
+    Light::new(position, power)
+}

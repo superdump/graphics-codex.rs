@@ -21,6 +21,7 @@
  * SOFTWARE.
  */
 
+use crate::light::Light;
 use crate::mesh::Mesh;
 use crate::obj::*;
 use crate::triangle::Triangle;
@@ -33,6 +34,7 @@ pub struct Scene {
     pub planes: Vec<Plane>,
     pub triangles: Vec<Triangle>,
     pub meshes: Vec<Mesh>,
+    pub lights: Vec<Light>,
 }
 
 impl Scene {
@@ -42,6 +44,7 @@ impl Scene {
             planes: Vec::new(),
             triangles: Vec::new(),
             meshes: Vec::new(),
+            lights: Vec::new(),
         }
     }
 
